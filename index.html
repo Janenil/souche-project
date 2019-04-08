@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>souche_1</title>
+</head>
+<body>
+  <div id="parent">
+    <div class="son1">1</div>
+    <div class="son1">2</div>
+    <div class="son1">3</div>
+    <div class="son1">4</div>
+    <div class="son1">5</div>
+  </div>
+</body>
+<script>
+  var dom = document.getElementById('parent');
+  getParentNode(dom, 'son1'); // <div class="son1">1</div>
+  getParentNode(dom, 'son'); // null
+  function getParentNode(elem, classname) {
+    let arr = [...elem.children]
+    let result = '';
+    let _index = undefined;
+    arr.forEach((item,index) => {
+      if (item.getAttribute("class") == classname) {
+        if (_index == undefined ) {
+          _index = index;
+          result = item;
+        }
+      }
+      if (index == arr.length - 1 && _index == undefined) {
+        if (item.getAttribute("class") !== classname) {
+           result = null
+        }
+      }
+    })
+    console.log(result)
+    return result;
+  }
+</script>
+</html>
