@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <div id="reslut">
+    <p>
+        页面缓存
+    </p>
+  </div>
+</body>
+<script>
+
+  var result = '';
+
+  var indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
+  if(indexedDB && result === ''){
+      result = 'indexedDB';
+  } 
+  if (window.openDatabase && result === '') {
+      result = 'websql'
+  } 
+  if(window.localStorage && (window.localStorage.setItem('a', 123) , window.localStorage.getItem('a') == 123) && result === '') {
+    result = 'localStorage'
+  } 
+  if (window.sessionStorage && (window.sessionStorage.setItem('a', 123) , window.sessionStorage.getItem('a') == 123)&& result === '') {
+    result = 'sessionStorage'
+  } 
+  if(navigator.cookieEnabled && result === ''){
+    result = 'cookie'
+  }
+  
+  function getArgumentData(value) {
+    let data = [];
+    if(Array.isArray(value)) {
+      value.forEach((item) => {
+        for (var i in item) {
+          data.push(item[i])
+        }
+      })
+    } else {
+      for (var i in value) {
+        data = value[i];
+      }
+    }
+    return data;
+  }
+  
+  // indexedDB
+  async function set(key, value) {
+    const dbName = "testDB";
+    var db;
+    var objectStore;
+    var request = indexedDB.open(dbName, 2);
+    request.onerror = function(event) {
+      console.log('something wrong')
+    };
+    request.onupgradeneeded = function(event) {
+      //request(即event.target)的result属性是IDBDatabase类型；
+      db = event.target.result;
+      objectStore = db.createObjectStore(key, { autoIncrement : true });
+      // 在新创建的对象存储空间中保存值
+      if(Array.isArray(value)) {
+        value.forEach((item) => {
+          for (var i in item) {
+            objectStore.add(item[i]);
+          }
+        })
+      } else {
+        for (var i in value) {
+          objectStore.add(value[i]);
+        }
+      }
+    };
+    return getArgumentData(value);
+  }
+  
+  // set('userData',{name : '大搜车'});
+  // getData('userData');
+
+  // indexedDB的获取
+  function read(key) {
+    var request = indexedDB.open('testDB', 2);
+    var _result = '123';
+    return new Promise((resolve, reject) => {
+      request.onsuccess =  function (event) {
+        db = event.target.result;
+        var transaction = db.transaction(key);
+        var objectStore = transaction.objectStore(key);
+        objectStore.getAll().onsuccess =  function(event){
+          _result =  event.target.result.toString();
+          resolve(_result)
+        }
+      }  
+    })
+  }
+  
+  // websqlSet('userData',{name : '大搜车'});
+  // websqlGet('userData');
+
+  async function websqlSet(key, value) {
+      var db = openDatabase('mydb', '1.0', 'Test DB', 2 * 1024 * 1024);
+      db.transaction(function (tx) {
+        tx.executeSql(`CREATE TABLE IF NOT EXISTS ${key} (name)`);
+        if(Array.isArray(value)) {
+          value.forEach((item) => {
+            for (var i in item) {
+              tx.executeSql(`INSERT INTO ${key} (name) VALUES ( "${item[i]}")`);
+            }
+          })
+        } else {
+          for (var i in value) {
+            tx.executeSql(`INSERT INTO ${key} (name) VALUES ( "${value[i]}")`);
+          }
+        }
+      });
+      return getArgumentData(value);
+  }
+
+  function websqlGet(key) {
+    var db = openDatabase('mydb', '1.0', 'Test DB', 2 * 1024 * 1024);
+    let arr = [];
+    return new Promise((resolve, reject) => {
+      db.transaction(function (tx) {
+        tx.executeSql(`SELECT * FROM ${key}`, [], function (tx, results) {
+            var len = results.rows.length, i;
+            for (i = 0; i < len; i++){
+              arr.push(Object.values(results.rows[i]).toString())
+            }
+            resolve(arr.toString())
+        }, null);
+      });
+    })
+  }
+
+// const foo = async() => {
+//   const result = await set('userData',{name : '大搜车'})
+//   console.log(result)
+// }
+// foo();
+
+  function localSet(key, value) {
+    localStorage.setItem(key, getArgumentData(value))
+    return getArgumentData(value)
+  }
+
+  function localGet(key) {
+    localStorage.getItem(key)
+    return localStorage.getItem(key)
+  }
+
+  // SessionSet('userData',{name : '大搜车'});
+  // SessionGet('userData');
+  function SessionSet(key, value) {
+    sessionStorage.setItem(key, getArgumentData(value))
+    return getArgumentData(value)
+  }
+
+  function SessionGet(key) {
+    sessionStorage.getItem(key)
+    return sessionStorage.getItem(key)
+  }
+
+  // CookieSet('userData',[{name : '大搜车'},{name : '大搜车2'}]);
+  // CookieSet('userData1',[{name : '大搜车3'},{name : '大搜车4'}]);
+  // CookieGet('userData');
+
+  function CookieSet(key, value){
+    document.cookie =`${key}=${escape(getArgumentData(value))}`;
+    return getArgumentData(value);
+  }
+
+  function CookieGet(key) {
+    let data = '';
+    var arr = unescape(document.cookie).split(';')
+    arr.forEach((item) => {
+      if(item.split('=')[0].trim() == key) {
+        data = item.split('=')[1];
+      }
+    })
+    return data.toString();
+  }
+
+  async function setData(key, value) {
+    let _result;
+    switch(result) {
+      case 'indexedDB':
+        _result = set('userData',{name : '大搜车'});
+        break;
+      case 'websql':
+        _result = websqlSet('userData',{name : '大搜车'});
+        break;
+      case 'localStorage':
+        _result = localSet('userData',{name : '大搜车'});
+        break; 
+      case 'sessionStorage':
+        _result = SessionSet('userData',{name : '大搜车'});
+        break;
+      case 'cookie':
+        _result = CookieSet('userData',{name : '大搜车'});
+        break;
+      default:
+        console.log('nothing');
+        break;
+    }
+    return _result;
+  }
+
+  async function getData(key) {
+    let _result;
+    switch(result) {
+      case 'indexedDB':
+        _result = await read(key);
+        break;
+      case 'websql':
+        _result = await websqlGet(key);
+        break;
+      case 'localStorage':
+        _result = localGet(key)
+        break; 
+      case 'sessionStorage':
+        _result = SessionGet(key);
+        break;
+      case 'cookie':
+        _result = CookieGet('userData');
+        break;
+      default:
+        console.log('nothing');
+        break;
+    }
+    return _result
+  }
+
+  setData('userData', { name : '大搜车'}).then(data => {
+    console.log(data); // 输出 '大搜车'
+    return getData('userData');
+  }).then(data => {
+      console.log(data); // 输出 '大搜车'
+  });
+
+
+
+</script>
+</html>
