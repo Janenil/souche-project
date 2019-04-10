@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    .wrapper {
+      width: 500px;
+      height: 400px;
+      background:#e6e6e6;
+      margin: auto;
+      padding: 5px;
+    }
+    #input{
+      width: 100%;
+      border: 0;
+      height: 40px;
+      text-indent: 10px;
+      color: gray;
+      border-radius: 5px;
+      font-size: 18px;
+    }
+    #text{
+      color: gray;
+      font-size: 18px;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div>
+      <input id="input" q-value="value" type="text">
+    </div>
+    <div q-text="value" id="text">
+      
+    </div>
+
+  </div>
+</body>
+
+<script>
+  var doms = [
+    document.getElementById('text'),
+    document.getElementById('input')
+  ];
+
+
+  var data = {
+    value: 'initial'
+  }
+
+  var command = {
+    text: function(str) {
+        this.innerHTML = str;
+    },
+    value: function(str) {
+        this.setAttribute('value', str);
+    }
+};
+
+
+  var scan = () => {
+    doms.forEach((item) => {
+      var _item = item;
+      _item.command = [];
+      [..._item.attributes].forEach((i) => {
+        var attr = i;
+        if (attr.nodeName.indexOf('q-') >= 0) {
+          command[attr.nodeName.slice(2)].call(_item,data[attr.nodeValue])
+          _item.command.push(command[attr.nodeName.slice(2)])
+        }
+      })
+    })
+  
+  }
+
+
+  var _value;
+  var defineGetAndSet = (obj, propName) => {
+    try {
+      Object.defineProperty(obj, propName, {
+        get: () => {
+          return _value;
+        },
+        set: (newValue) => {
+          _value = newValue;
+          scan();
+        },
+        enumerable: true,
+        configurable: true
+      });
+    } catch(error) {
+      console.log('something is wrong')
+    }
+  }
+
+  scan();
+
+  defineGetAndSet(data, 'value');
+
+  if(document.addEventListener) {
+    doms[1].addEventListener('keyup', (e) => {
+      data.value = e.target.value
+    },false)
+  } else {
+    doms[1].attachEvent('onkeyup', function(e) {
+        data.value = e.target.value;
+    }, false);
+  }
+</script>
+</html>
+
+
+
+
+
